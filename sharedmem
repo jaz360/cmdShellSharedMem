@@ -1,0 +1,163 @@
+#include<stdio.h> 
+#include<string.h> 
+#include<stdlib.h> 
+#include<unistd.h> 
+#include<sys/wait.h> 
+#include <fcntl.h> 
+#include <sys/ipc.h> 
+#include <sys/shm.h> 
+#include <sys/mman.h>
+
+
+
+
+ 
+
+ 
+/*
+**********************************************************************************
+ NOTE I used -lrt library for shm_open in order to compile eg) gcc Q2.c -o Q2 -lrt
+**********************************************************************************
+*/
+  char *argv[3];
+  char *buffer;
+  size_t bufsize = 64;
+  size_t characters;
+  char *token;
+  char *sharedMem = "/sharedMem";
+  char *tokenDelim = " \t\r\n\a";
+  int err;
+  int fd;
+  int fd1;
+
+void cmdExceute (char* cmd);
+int getInput();
+
+int main (){
+    
+  
+  
+    
+    
+    buffer = (char *)malloc(bufsize * sizeof(char));
+    
+
+    printf("\n --JazibKhanShell--215956006>> "); 
+
+     
+   while ((characters = getline(&buffer,&bufsize,stdin)!= EOF)){
+     
+      printf("\n ..Working on your request.. \n");
+
+      cmdExceute(buffer);
+      getInput();
+     
+      shm_unlink(sharedMem);
+
+
+
+    }
+
+
+    return(0);
+}
+
+
+
+
+
+
+void cmdExceute (char* cmd){
+
+    
+  fd = shm_open(sharedMem,O_CREAT | O_RDWR,0666);
+  ftruncate(fd, 4096);
+  mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+  pid_t childPid;
+  childPid  = fork(); // pipe before fork
+  
+
+
+
+if (childPid == 0){
+    printf(" ERROR invalid input ");
+
+ 
+      token = strtok(cmd, tokenDelim);     
+      argv[0] = token;
+
+
+while (token != NULL)
+  {
+  token = strtok (NULL, tokenDelim );
+     argv[1] = token;
+  token = strtok (NULL, tokenDelim );
+    
+  }
+  argv[2] = NULL;
+
+   
+   
+
+  
+
+      dup2(fd, 1);
+
+      if ( execvp(argv[0], argv) == -1){
+        
+        exit(0);
+      }
+      
+
+  close(fd);
+
+  
+ 
+
+
+  }
+
+
+    else  {
+       
+        if (err == -1){
+          perror("adad");
+        }else
+        fd1 = shm_open(sharedMem,O_RDONLY,0666);
+        wait(NULL);  
+        printf("\n ...output is ready. Display it now [Y/N]>>");
+
+        if (getInput()== 'Y'){
+        
+        char buffer[1];
+
+        
+
+        while(read(fd1, buffer, 1) > 0)
+        {
+           printf("%s",buffer);
+        }
+        }
+        
+        
+       close(fd1);
+
+
+
+
+      
+     
+ printf("\n --JazibKhanShell--215956006>>"); 
+     
+    
+     
+    }      
+
+}
+
+int getInput (){
+
+  int input = getchar();
+  return input;
+}
